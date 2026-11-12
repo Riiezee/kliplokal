@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>KlipLokal Capture</title>
+<style>
+  body {color-scheme:dark; width:330px; margin:0; padding:16px; background:#151c29; color:#f1f5ff; font:14px/1.4 system-ui,sans-serif}
+  h1 {font-size:18px; margin:0 0 8px}
+  p {margin:8px 0; color:#c1cbde}
+  button,select {font:inherit; border-radius:8px; min-height:36px; padding:0 9px}
+  button {background:#81f0ca; color:#0d2420; border:0; font-weight:700; cursor:pointer}
+  button:disabled {opacity:.55; cursor:default}
+  select {display:block; width:100%; margin:12px 0 8px; background:#0c111a; color:#f1f5ff}
+  [hidden] {display:none}
+  .secondary {background:#2b364a; color:#f1f5ff}
+  #error {color:#ffabb5}
+</style>
+</head>
+<body>
+<h1>KlipLokal Capture</h1>
+<p id="status" role="status">Buka video di tab ini, lalu mulai tangkap.</p>
+<button id="start">Mulai tangkap</button>
+<button class="secondary" id="stop" hidden>Berhenti</button>
+<select id="streams" aria-label="Pilih stream" hidden></select>
+<button id="send" hidden>Kirim ke KlipLokal</button>
+<p id="error" role="alert"></p>
+<script src="popup.js"></script>
+</body>
+</html>

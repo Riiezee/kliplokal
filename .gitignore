@@ -1,0 +1,32 @@
+# Python runtime and tooling
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Local settings and diagnostics
+.env
+.env.*
+!.env.example
+*.log
+.streamdrop-*/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Local media, download remnants, and packaged builds
+*.mp4
+*.m4v
+*.mov
+*.webm
+*.mkv
+*.avi
+*.mp3
+*.m4a
+*.ts
+*.part
+*.ytdl
+*.zip
+*.exe

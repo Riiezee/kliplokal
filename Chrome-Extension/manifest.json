@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "KlipLokal Capture",
+  "version": "1.0.0",
+  "description": "Temukan link stream di tab yang kamu pilih dan kirim ke dashboard KlipLokal lokal.",
+  "permissions": ["activeTab", "storage", "webRequest"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "action": {"default_popup": "popup.html"},
+  "background": {"service_worker": "worker.js"}
+}

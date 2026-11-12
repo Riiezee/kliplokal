@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KlipLokal · Local video downloader</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0b101a;
+  --panel: #131b2b;
+  --inset: #0e1522;
+  --border: #283650;
+  --text: #f0f4ff;
+  --muted: #a9b7d0;
+  --accent: #a8baff;
+  --mint: #88e8c1;
+  --error: #ffabb5;
+}
+* {box-sizing: border-box}
+[hidden] {display: none !important}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 20% 0%, #25345c 0%, transparent 52%), var(--bg);
+  color: var(--text);
+  font: 15px/1.55 "Geist", "Segoe UI", system-ui, sans-serif;
+}
+.wrap {width: min(1120px, 100% - 40px); margin: auto}
+header {display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 0; border-bottom: 1px solid var(--border)}
+.brand {display: flex; align-items: center; gap: 11px; font-size: 20px; font-weight: 750; letter-spacing: -.035em}
+.icon {display: grid; place-items: center; width: 37px; height: 37px; border-radius: 12px; color: #111a32; background: linear-gradient(145deg,#d5deff,#91aaff); font-size: 23px; line-height: 1}
+.badge {color: var(--muted); font-size: 12px}
+.badge::before {content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--mint)}
+main {padding: clamp(32px, 6vw, 66px) 0 36px}
+.eyebrow {margin: 0 0 8px; color: var(--accent); font-size: 13px; font-weight: 700}
+h1 {margin: 0; font-size: clamp(33px, 5vw, 61px); letter-spacing: -.055em; line-height: 1.08}
+.intro {max-width: 62ch; margin: 12px 0 25px; color: var(--muted)}
+.modes {display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 20px; background: var(--inset); border: 1px solid var(--border); border-radius: 13px}
+.modes button {min-height: 38px; padding: 0 14px; background: transparent; color: var(--muted); border: 1px solid transparent}
+.modes button[aria-pressed="true"] {background: #243451; border-color: #395078; color: var(--text)}
+.workspace {display: grid; grid-template-columns: minmax(0, 1fr) minmax(275px, .45fr); gap: 16px; align-items: start}
+.sidebar {display: grid; gap: 14px; min-width: 0}
+.card {min-width: 0; padding: clamp(16px, 2.5vw, 25px); background: var(--panel); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 16px 40px #04081140}
+label {display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700}
+.field {display: flex; gap: 8px}
+input, select, button {min-height: 44px; border-radius: 10px; font: inherit}
+input, select {min-width: 0; padding: 0 12px; color: var(--text); background: var(--inset); border: 1px solid #3b4d6c}
+input {flex: 1; width: 100%}
+input::placeholder {color: #8798b9}
+button {padding: 0 16px; border: 1px solid transparent; background: var(--accent); color: #111a32; font-weight: 750; cursor: pointer}
+button:enabled:hover {filter: brightness(1.12)}
+button:disabled {opacity: .52; cursor: default}
+:focus-visible {outline: 2px solid var(--accent); outline-offset: 3px}
+.secondary {background: #223049; border-color: #3a4e70; color: var(--text)}
+.quality {margin-top: 20px; display: grid; grid-template-columns: auto 1fr; gap: 7px 12px; align-items: center}
+.quality label {margin: 0}
+.quality select {width: max-content; min-height: 38px}
+.quality .meta {grid-column: 1/-1; margin: 0}
+.meta {margin: 10px 0 0; color: var(--muted); font-size: 13px}
+#preview-status:empty, #notice:empty {display: none}
+#preview-scan {margin-top: 12px}
+#preview-card {display: grid; grid-template-columns: minmax(130px, 43%) minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 16px; padding: 12px; background: linear-gradient(130deg,#192740,#111a2b); border: 1px solid #354c73; border-radius: 14px}
+.preview-image {display: grid; place-items: center; aspect-ratio: 16/9; overflow: hidden; border-radius: 9px; background: #202e47; color: var(--muted); font-size: 12px; text-align: center}
+.preview-image > * {grid-area: 1/1}
+.preview-image img {width: 100%; height: 100%; object-fit: contain; background: #0b111d}
+#preview-title {margin: 0; font-size: clamp(16px, 2vw, 21px); font-weight: 750; line-height: 1.28; overflow-wrap: anywhere}
+#preview-source {margin: 6px 0 12px; overflow-wrap: anywhere}
+.preview-actions, .scan-actions {display: flex; flex-wrap: wrap; gap: 8px}
+.preview-actions button, .scan-actions button {min-height: 38px; padding: 0 12px; font-size: 13px}
+#save-mp4 {background: var(--mint); color: #10251f}
+#save-mp3 {border-color: #5873ab; color: #dbe5ff}
+.destination .field {flex-direction: column}
+.destination button {align-self: flex-start; min-height: 36px; font-size: 13px}
+.compress-settings {display: flex; flex-wrap: wrap; gap: 12px; margin: 14px 0}
+.compress-settings label {margin-bottom: 5px}
+.compress-settings input, .compress-settings select {min-height: 38px}
+#target-size {width: 130px}
+.head {display: flex; justify-content: space-between; align-items: baseline; gap: 10px}
+h2 {margin: 0; font-size: 15px}
+#percent {color: var(--mint); font: 650 13px ui-monospace, monospace}
+progress {display: block; width: 100%; height: 7px; margin: 13px 0 11px; border: 0; border-radius: 20px; overflow: hidden; appearance: none; background: #263450}
+progress::-webkit-progress-bar {background: #263450}
+progress::-webkit-progress-value {background: linear-gradient(90deg,var(--accent),var(--mint)); border-radius: 20px}
+progress::-moz-progress-bar {background: var(--mint)}
+progress:indeterminate {background: linear-gradient(90deg,#263450,var(--accent),#263450); background-size: 240% 100%; animation: scan 1.5s linear infinite}
+progress:indeterminate::-webkit-progress-bar {background: transparent}
+@keyframes scan {to {background-position: -240% 0}}
+#message, #detail, #file, #notice {overflow-wrap: anywhere; margin: 0}
+#message {font-size: 14px}
+#detail, #file {margin-top: 4px; color: var(--muted); font-size: 13px}
+#file {color: var(--mint)}
+#notice {margin-top: 12px; color: var(--error); font-size: 13px}
+[data-phase="error"] #message {color: var(--error)}
+#streams {width: 100%; margin-top: 12px}
+.scan-actions {margin-top: 12px}
+footer {margin-top: 17px; color: var(--muted); font-size: 12px}
+@media (max-width: 800px) {
+  .workspace {grid-template-columns: 1fr}
+  .sidebar {grid-template-columns: repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 540px) {
+  .wrap {width: calc(100% - 28px)}
+  .sidebar, #preview-card {grid-template-columns: 1fr}
+  .field {flex-direction: column}
+  .preview-actions > button {flex: 1}
+}
+@media (prefers-reduced-motion: reduce) {progress:indeterminate {animation: none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand"><span class="icon" aria-hidden="true">↓</span> KlipLokal</div>
+  <span class="badge">Aplikasi lokal</span>
+</header>
+<main>
+  <p class="eyebrow">Video downloader</p>
+  <h1>Download video dari link.</h1>
+  <p class="intro">Tempel link YouTube atau situs video lain untuk melihat pratinjau sebelum mengunduh.</p>
+  <nav class="modes" aria-label="Mode KlipLokal">
+    <button id="download-mode" type="button" aria-pressed="true">Download</button>
+    <button id="compress-mode" type="button" aria-pressed="false">Kompres Video</button>
+  </nav>
+  <div class="workspace">
+  <section class="card" aria-label="Pengaturan video">
+    <form id="download">
+      <label for="url">Link video</label>
+      <div class="field">
+        <input id="url" type="url" placeholder="https://..." required maxlength="12000" spellcheck="false" autocomplete="off">
+        <button id="submit">Cek video</button>
+      </div>
+      <p id="preview-status" class="meta" role="status"></p>
+      <section id="preview-card" aria-label="Pratinjau video" hidden>
+        <div class="preview-image">
+          <span>Thumbnail tidak tersedia</span>
+          <img id="preview-thumbnail" alt="Thumbnail video" referrerpolicy="no-referrer" hidden>
+        </div>
+        <div>
+          <h2 id="preview-title"></h2>
+          <p id="preview-source" class="meta"></p>
+          <div class="preview-actions">
+            <button id="save-mp4" type="button">Unduh MP4</button>
+            <button id="save-mp3" type="button" class="secondary">Unduh MP3</button>
+          </div>
+        </div>
+      </section>
+      <button id="preview-scan" type="button" class="secondary" hidden>Pindai lewat browser</button>
+      <div class="quality">
+        <label for="quality">Kualitas</label>
+        <select id="quality" aria-describedby="quality-help">
+          <option value="auto">Otomatis</option>
+          <option value="240">Maks. 240p</option>
+          <option value="360">Maks. 360p</option>
+          <option value="480">Maks. 480p</option>
+          <option value="720">Maks. 720p</option>
+          <option value="1080">Maks. 1080p</option>
+          <option value="1440">Maks. 1440p</option>
+          <option value="2160">Maks. 2160p</option>
+        </select>
+        <p class="meta" id="quality-help">Pilihan resolusi adalah batas maksimum. Download perlu format dengan resolusi yang diketahui dan sesuai batas.</p>
+      </div>
+    </form>
+    <form id="compress" hidden>
+      <label for="source">File video</label>
+      <div class="field">
+        <input id="source" type="text" required maxlength="4096" placeholder="D:\Video\video.mp4" spellcheck="false" autocomplete="off">
+        <button id="pick-file" class="secondary" type="button">Pilih video</button>
+      </div>
+      <div class="compress-settings">
+        <div>
+          <label for="compress-method">Mode kompres</label>
+          <select id="compress-method"><option value="quality">Kualitas</option><option value="target">Target ukuran</option></select>
+        </div>
+        <div id="preset-field">
+          <label for="preset">Kualitas</label>
+          <select id="preset"><option value="small">Kecil</option><option value="balanced" selected>Seimbang</option><option value="high">Tinggi</option></select>
+        </div>
+        <div id="target-field" hidden>
+          <label for="target-size">Target (MB)</label>
+          <input id="target-size" type="number" min="1" max="100000" step="any" value="300">
+        </div>
+        <div>
+          <label for="compress-resolution">Resolusi maksimum</label>
+          <select id="compress-resolution">
+            <option value="original">Asli</option><option value="480" selected>480p</option>
+            <option value="720">720p</option><option value="1080">1080p</option>
+          </select>
+        </div>
+      </div>
+      <button id="compress-submit">Kompres ke MP4</button>
+      <p class="meta">File diproses di laptop. Target ukuran adalah perkiraan dan memakai dua tahap.</p>
+    </form>
+    <p id="notice" role="alert"></p>
+  </section>
+  <aside class="sidebar" aria-label="Penyimpanan dan status">
+    <section class="card destination" aria-label="Folder tujuan">
+      <label for="folder">Simpan ke</label>
+      <div class="field">
+        <input id="folder" type="text" maxlength="4096" spellcheck="false" autocomplete="off">
+        <button id="pick-folder" class="secondary" type="button">Pilih folder</button>
+      </div>
+    </section>
+  <section class="card job" id="job" aria-label="Status proses" data-phase="idle">
+    <div class="head"><h2 id="phase">Siap</h2><span id="percent"></span></div>
+    <progress id="progress" max="100" value="0" aria-label="Progres"></progress>
+    <p id="message" role="status">Siap menerima link.</p>
+    <p id="detail"></p>
+    <p id="file"></p>
+    <select id="streams" aria-label="Stream hasil pemindaian" hidden></select>
+    <div class="scan-actions" id="scan-actions" hidden>
+      <button id="scan-next" type="button">Cek stream</button>
+      <button id="scan-cancel" class="secondary" type="button">Batal</button>
+    </div>
+  </section>
+  </aside>
+  </div>
+  <footer>Kalau jendela pemindai terbuka, putar video utama sebelum mengecek stream di dashboard.</footer>
+</main>
+</div>
+<script>
+const el = id => document.getElementById(id);
+const phases = {
+  idle: "Siap", checking: "Memeriksa sumber", scanning: "Pemindai browser", collecting: "Mengecek stream",
+  review: "Pilih stream", downloading: "Download", compressing: "Kompres", saving: "Menyimpan", done: "Selesai",
+  error: "Gagal", cancelled: "Dibatalkan"
+};
+const active = new Set(["checking", "scanning", "collecting", "review", "downloading", "compressing", "saving"]);
+let submitting = false;
+let picking = false;
+let controllingScan = false;
+let scanId = "";
+let shownScanId = "";
+let lastState = "idle";
+let revision = 0;
+let previewTimer;
+let previewVersion = 0;
+let previewUrl = "";
+let scanUrl = "";
+const folderKey = "streamdrop.output-folder";
+try { el("folder").value = localStorage.getItem(folderKey) || ""; } catch {}
+const capturedStream = new URLSearchParams(location.hash.slice(1)).get("stream");
+if (capturedStream !== null) {
+  history.replaceState(null, "", location.pathname + location.search);
+  if (capturedStream.length <= 12000 && /^https?:\/\//i.test(capturedStream)) {
+    el("url").value = capturedStream;
+  }
+}
+
+function rememberFolder() {
+  try { localStorage.setItem(folderKey, el("folder").value.trim()); } catch {}
+}
+
+function updateButtons() {
+  el("pick-folder").disabled = el("pick-file").disabled = picking;
+  el("submit").disabled = el("compress-submit").disabled = picking || submitting || active.has(lastState);
+  const busy = picking || submitting || active.has(lastState);
+  el("save-mp4").disabled = el("save-mp3").disabled = busy || !previewUrl;
+  el("preview-scan").disabled = busy || !scanUrl;
+  el("scan-cancel").disabled = controllingScan;
+  el("scan-next").disabled = controllingScan || (lastState === "review" && el("streams").value === "");
+}
+
+function render(state) {
+  const isActive = active.has(state.phase);
+  lastState = state.phase;
+  scanId = state.scan_id;
+  el("job").dataset.phase = state.phase;
+  el("phase").textContent = phases[state.phase];
+  if (el("message").textContent !== state.message) el("message").textContent = state.message;
+  el("detail").textContent = state.detail;
+  el("file").textContent = state.file ? state.file + " · " + state.folder : "";
+  el("folder").placeholder = state.default_folder;
+  el("percent").textContent = state.percent === null ? "" : state.percent + "%";
+  if (isActive && state.percent === null) el("progress").removeAttribute("value");
+  else el("progress").value = state.percent ?? 0;
+  const reviewing = state.phase === "review";
+  el("streams").hidden = !reviewing;
+  el("scan-actions").hidden = state.phase !== "scanning" && !reviewing;
+  el("scan-next").textContent = reviewing ? "Download stream pilihan" : "Cek stream";
+  if (reviewing && shownScanId !== scanId) {
+    const options = state.streams.map((stream, index) => {
+      const duration = stream.seconds === null ? "durasi belum diketahui" :
+        Math.floor(stream.seconds / 60) + ":" + String(stream.seconds % 60).padStart(2, "0");
+      const kind = stream.master ? "HLS · beberapa kualitas" : stream.kind;
+      return new Option([duration, kind, stream.name, stream.host].join(" · "), String(index));
+    });
+    el("streams").replaceChildren(new Option("Pilih stream yang mau diunduh", ""), ...options);
+    shownScanId = scanId;
+  }
+  updateButtons();
+}
+
+async function poll() {
+  const current = revision;
+  try {
+    const response = await fetch("/api/job", {cache: "no-store"});
+    if (!response.ok) throw new Error();
+    const state = await response.json();
+    if (current === revision && !submitting && !controllingScan) render(state);
+  } catch {
+    if (!submitting && current === revision) el("notice").textContent = "Aplikasi lokal tidak terhubung. Periksa jendela CMD.";
+  } finally {
+    setTimeout(poll, 650);
+  }
+}
+
+async function controlScan(action) {
+  if (controllingScan) return;
+  revision++;
+  controllingScan = true;
+  el("notice").textContent = "";
+  updateButtons();
+  try {
+    const response = await fetch("/api/scan", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({action, scan_id: scanId, index: Number(el("streams").value)})
+    });
+    if (!response.ok) throw new Error((await response.json()).error);
+    const status = await fetch("/api/job", {cache: "no-store"});
+    render(await status.json());
+  } catch (error) {
+    el("notice").textContent = error.message || "Cek status pemindai dan coba lagi.";
+  } finally {
+    controllingScan = false;
+    updateButtons();
+  }
+}
+
+el("streams").addEventListener("change", updateButtons);
+el("scan-next").addEventListener("click", () => controlScan(lastState === "review" ? "download" : "collect"));
+el("scan-cancel").addEventListener("click", () => controlScan("cancel"));
+
+async function pickPath(kind, field) {
+  picking = true;
+  updateButtons();
+  el("notice").textContent = "";
+  try {
+    const response = await fetch("/api/" + kind, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({folder: el("folder").value.trim()})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error);
+    if (data[kind]) {
+      el(field).value = data[kind];
+      if (kind === "folder") rememberFolder();
+    }
+  } catch (error) {
+    el("notice").textContent = error.message || "Ketik path lengkap di kolom yang sesuai.";
+  } finally {
+    picking = false;
+    updateButtons();
+  }
+}
+el("pick-folder").addEventListener("click", () => pickPath("folder", "folder"));
+el("pick-file").addEventListener("click", () => pickPath("file", "source"));
+
+function showMode(compress) {
+  el("download").hidden = compress;
+  el("compress").hidden = !compress;
+  el("download-mode").setAttribute("aria-pressed", String(!compress));
+  el("compress-mode").setAttribute("aria-pressed", String(compress));
+  el("notice").textContent = "";
+  document.querySelector("h1").textContent = compress ? "Kompres video di laptop." : "Download video dari link.";
+  document.querySelector(".eyebrow").textContent = compress ? "Video compressor" : "Video downloader";
+  document.querySelector(".intro").textContent = compress
+    ? "Pilih video, atur resolusi atau target ukuran, lalu simpan hasilnya sebagai MP4."
+    : "Tempel link YouTube atau situs video lain untuk melihat pratinjau sebelum mengunduh.";
+  document.querySelector("footer").hidden = compress;
+}
+el("download-mode").addEventListener("click", () => showMode(false));
+el("compress-mode").addEventListener("click", () => showMode(true));
+el("compress-method").addEventListener("change", () => {
+  const target = el("compress-method").value === "target";
+  el("target-field").hidden = !target;
+  el("target-size").disabled = !target;
+  el("preset-field").hidden = target;
+});
+
+async function submitJob(endpoint, fields) {
+  if (picking || submitting || active.has(lastState)) return;
+  revision++;
+  submitting = true;
+  el("notice").textContent = "";
+  updateButtons();
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        ...fields, folder: el("folder").value.trim()
+      })
+    });
+    if (!response.ok) throw new Error((await response.json()).error);
+    rememberFolder();
+    const status = await fetch("/api/job", {cache: "no-store"});
+    render(await status.json());
+  } catch (error) {
+    el("notice").textContent = error.message || "Proses belum bisa dimulai.";
+  } finally {
+    submitting = false;
+    updateButtons();
+  }
+}
+function schedulePreview(delay) {
+  clearTimeout(previewTimer);
+  const current = ++previewVersion;
+  const url = el("url").value.trim();
+  previewUrl = scanUrl = "";
+  el("preview-card").hidden = el("preview-scan").hidden = true;
+  el("preview-status").textContent = "";
+  updateButtons();
+  if (!/^https?:\/\//i.test(url) || !el("url").validity.valid) return;
+  el("preview-status").textContent = "Mencari info video…";
+  previewTimer = setTimeout(() => loadPreview(url, current), delay);
+}
+
+async function loadPreview(url, current) {
+  try {
+    const response = await fetch("/api/preview", {
+      method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({url})
+    });
+    const info = await response.json();
+    if (current !== previewVersion) return;
+    if (!response.ok) {
+      if (response.status === 422) {
+        scanUrl = url;
+        el("preview-scan").hidden = false;
+      }
+      throw new Error(info.error);
+    }
+    el("preview-title").textContent = info.title;
+    const duration = info.duration === null ? "" :
+      " · " + Math.floor(info.duration / 60) + ":" + String(Math.floor(info.duration % 60)).padStart(2, "0");
+    el("preview-source").textContent = (info.source || "") + duration;
+    const thumbnail = el("preview-thumbnail");
+    thumbnail.hidden = !info.thumbnail;
+    if (info.thumbnail) thumbnail.src = info.thumbnail;
+    else thumbnail.removeAttribute("src");
+    previewUrl = url;
+    el("preview-card").hidden = false;
+    el("preview-status").textContent = "";
+  } catch (error) {
+    if (current === previewVersion) el("preview-status").textContent = error.message || "Pratinjau gagal dimuat.";
+  } finally {
+    if (current === previewVersion) updateButtons();
+  }
+}
+
+el("preview-thumbnail").addEventListener("error", () => { el("preview-thumbnail").hidden = true; });
+el("url").addEventListener("input", () => schedulePreview(650));
+el("download").addEventListener("submit", event => {
+  event.preventDefault();
+  schedulePreview(0);
+});
+for (const format of ["mp4", "mp3"]) {
+  el("save-" + format).addEventListener("click", () => {
+    if (previewUrl) submitJob("/api/job", {
+      url: previewUrl, quality: el("quality").value, output: format, browser: "never"
+    });
+  });
+}
+el("preview-scan").addEventListener("click", () => {
+  if (scanUrl) submitJob("/api/job", {url: scanUrl, quality: el("quality").value, output: "mp4", browser: "scan"});
+});
+if (el("url").value) schedulePreview(0);
+el("compress").addEventListener("submit", event => {
+  event.preventDefault();
+  submitJob("/api/compress", {
+    source: el("source").value.trim(), mode: el("compress-method").value,
+    preset: el("preset").value, resolution: el("compress-resolution").value, target: el("target-size").valueAsNumber
+  });
+});
+poll();
+</script>
+</body>
+</html>
